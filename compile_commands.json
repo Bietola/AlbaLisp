@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/dincio/code/AlbaLisp/build",
+  "command": "/usr/bin/cc  -I/home/dincio/code/AlbaLisp/src    -Wall -Werror -o CMakeFiles/AlbaLisp.dir/src/alba.c.o   -c /home/dincio/code/AlbaLisp/src/alba.c",
+  "file": "/home/dincio/code/AlbaLisp/src/alba.c"
+},
+{
+  "directory": "/home/dincio/code/AlbaLisp/build",
+  "command": "/usr/bin/cc  -I/home/dincio/code/AlbaLisp/src    -Wall -Werror -o CMakeFiles/AlbaLisp.dir/src/mpc.c.o   -c /home/dincio/code/AlbaLisp/src/mpc.c",
+  "file": "/home/dincio/code/AlbaLisp/src/mpc.c"
+}
+]
