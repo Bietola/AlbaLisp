@@ -31,8 +31,8 @@ int main(int argc, char** argv) {
         // parse program and return "result"
         mpc_result_t r;
         if (mpc_parse("<stdin>", input, parser->program, &r)) {
-            long result = alba_eval(r.output);
-            printf("parsing result: %li\n", result);
+            lval_t result = alba_eval(r.output);
+            lval_println(&result);
             mpc_ast_delete(r.output);
         } else {
             mpc_err_print(r.error);
