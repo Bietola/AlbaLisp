@@ -55,7 +55,7 @@ lval_t* lval_sym(char* sym) {
     return v;
 }
 
-// lval symbol constructor
+// lval s-expression constructor
 lval_t* lval_sexpr(void) {
     lval_t* v = malloc(sizeof(lval_t));
     v->type = LVAL_SEXPR;
@@ -64,8 +64,8 @@ lval_t* lval_sexpr(void) {
     return v;
 }
 
-// free lval
-void lval_free(lval_t* v) {
+// free lval memory
+void lval_del(lval_t* v) {
     switch (v->type) {
         case LVAL_NUM:
             ; // nothing to deallocate
@@ -78,7 +78,7 @@ void lval_free(lval_t* v) {
             break;
         case LVAL_SEXPR:
             for (int j = 0; j < v->count; ++j) {
-                lval_free(v->cell[j]);
+                lval_del(v->cell[j]);
             }
             free(v->cell);
             break;
@@ -89,38 +89,6 @@ void lval_free(lval_t* v) {
     free(v);
 }
 
-// copy lval into another
-void lval_copy(lval_t* to, const lval_t* from) {
-    if (from == NULL) {
-        to = NULL;
-    }
-    else {
-        to = malloc(sizeof(lval_t));
-        to->type = from->type;
-        switch (from->type) {
-            case LVAL_NUM:
-                to->num = from->num;
-                break;
-            case LVAL_ERR:
-                to->err = from->err;
-                break;
-            case LVAL_SYM:
-                to->sym = from->sym;
-                break;
-            case LVAL_SEXPR:
-                to->cell = malloc(sizeof(lval_t*));
-                to->count = from->count;
-                for (int j = 0; j < from->count; ++j) {
-                    to->cell[j] = malloc(sizeof(lval_t));
-                    *(to->cell[j]) = *(from->cell[j]);
-                }
-                break;
-            default:
-                assert(0 && "trying to copy malformed lval");
-        }
-    }
-}
-
 // add element to lval containing sexpr
 void lval_add(lval_t* sexpr, lval_t* toAdd) {
     assert(sexpr && "trying to add lval to NULL sexpr");
@@ -128,6 +96,33 @@ void lval_add(lval_t* sexpr, lval_t* toAdd) {
     ++(sexpr->count);
     sexpr->cell = realloc(sexpr->cell, sizeof(lval_t*) * sexpr->count);
     sexpr->cell[sexpr->count - 1] = toAdd;
+}
+
+// pop element from s-expression lval
+lval_t* lval_pop(lval_t* sexpr, int pos) {
+    // assert OOB
+    assert(pos >= 0 && pos < sexpr->count &&
+           "trying to pop sexpr out of bounds");
+
+    // take
+    lval_t* ret = sexpr->cell[pos];
+
+    // shift
+    memmove(&sexpr->cell[pos], &sexpr->cell[pos + 1],
+            sizeof(lval_t*) * (sexpr->count - pos - 1));
+
+    // decrease size
+    --sexpr->count;
+
+    // return
+    return ret;
+}
+
+// pop element from s-expression and deallocate it [the s-expression]
+lval_t* lval_take(lval_t* sexpr, int pos) {
+    lval_t* ret = lval_pop(sexpr, pos);
+    lval_del(sexpr);
+    return ret;
 }
 
 // read ast node into an lval

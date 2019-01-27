@@ -9,6 +9,7 @@
 
 #include "parsing.h"
 #include "lval.h"
+#include "eval.h"
 
 // MAIN
 int main(int argc, char** argv) {
@@ -31,7 +32,7 @@ int main(int argc, char** argv) {
         // parse program and return "result"
         mpc_result_t r;
         if (mpc_parse("<stdin>", input, parser->program, &r)) {
-            lval_t* result = lval_read(r.output);
+            lval_t* result = lval_eval(lval_read(r.output));
             lval_println(result);
             mpc_ast_delete(r.output);
         } else {
