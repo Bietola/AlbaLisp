@@ -7,69 +7,96 @@
 
 #include "lval.h"
 
-/* // db print lispy ast with needed information */
-/* void alba_print_ast(mpc_ast_t* ast, int depth) { */
-/*     if (ast) { */
-/*         for (int j = 0; j < depth; ++j) { */
-/*             printf("    "); */
-/*         } */
-/*         printf("%i: |%s| [%s]\n", depth, ast->tag, ast->contents); */
+// db print lispy ast with needed information
+void alba_print_ast(mpc_ast_t* ast, int depth) {
+    if (ast) {
+        for (int j = 0; j < depth; ++j) {
+            printf("    ");
+        }
+        printf("%i: |%s| [%s]\n", depth, ast->tag, ast->contents);
 
-/*         for (int j = 0; j < ast->children_num; ++j) { */
-/*             alba_print_ast(ast->children[j], depth + 1); */
-/*         } */
-/*     } */
-/* } */
+        for (int j = 0; j < ast->children_num; ++j) {
+            alba_print_ast(ast->children[j], depth + 1);
+        }
+    }
+}
 
-/* // evaulate operation */
-/* lval_t* alba_eval_op(char op, lval_t rhs, lval_t lhs) { */
-/*     lval_t* result; */
+// evaluate builtin operator
+lval_t* builtin_op(const char* op, lval_t* v) {
+    assert(sym && "trying to evaluate NULL builtin sym");
+    assert(v   && "trying to evaluate builtin  on NULL expression");
+    assert(v->count != 0 &&
+           "trying to evaluate builtin op on empty expression");
 
-/*     // propagate errors */
-/*     if (lhs.type == LVAL_ERR) */
-/*         lval_copy(result, rhs); */
-/*     if (rhs.type == LVAL_ERR) */
-/*         lval_copy(result, lhs); */
+    // ensure all arguments are numbers
+    for (int j = 0; j < v->count; ++j) {
+        if (v->cell[j]->type != LVAL_NUM) {
+            lval_del(v);
+            return lval_err("cannot operate on non-number!");
+        }
+    }
 
-/*     // operations on numbers */
-/*     long rhn = rhs.num; */
-/*     long lhn = lhs.num; */
-/*     switch (op) { */
-/*         case '+': return lval_num(rhn + lhn); */
-/*         case '-': return lval_num(rhn - lhn); */
-/*         case '*': return lval_num(rhn * lhn); */
-/*         case '/': */
-/*             return lhn == 0 ? lval_err(LERR_DIV_ZERO) */
-/*                             : lval_num(rhn / lhn); */
-/*         default : return lval_err(LERR_BAD_OP); */
-/*     } */
-/* } */
+    // take first element
+    lval_t* acc = lval_pop(v);
 
-/* // parse an alba abstract syntax tree and return its "result" */
-/* lval_t alba_eval(mpc_ast_t* ast) { */
-/*     if (ast) { */
-/*         // simple expression: number */
-/*         if (strstr(ast->tag, "number")) { */
-/*             errno = 0; */
-/*             long result = strtol(ast->contents, NULL, 10); */
-/*             return errno != ERANGE ? lval_num(result) : lval_err(LERR_BAD_NUM); // handle bad number error */
-/*         } */
-/*         // complex expression of the form ( <op> <expr>+ ) */
-/*         else { */
-/*             // get operator of expression */
-/*             //  NB: skipping the parentheses (or ^) at the beginning */
-/*             char op = ast->children[1]->contents[0]; */
-/*             // accumulate all children using operation */
-/*             //  NB: skipping parentheses (or $) at the end */
-/*             lval_t result = alba_eval(ast->children[2]); */
-/*             for (int j = 3; j < ast->children_num - 1; ++j) { */
-/*                 result = alba_eval_op(op, result, alba_eval(ast->children[j])); */
-/*             } */
-/*             return result; */
-/*         } */
-/*     } */
-/*     else { */
-/*         assert(0 && "trying to parse null ast node"); */
-/*         return lval_num(0); */
-/*     } */
-/* } */
+    // unary minus
+    if (v->count == 0 && strcmp(op, "-") == 0) {
+        acc->num = -acc->num;
+        lval_del(v);
+        return acc;
+    }
+
+    // more than one element
+    while (v->count) {
+        lval_t* nv = lval_pop(v);
+
+        // match operator
+        if      (strcmp(op, "+") == 0) acc->num += nv->num;
+        else if (strcmp(op, "-") == 0) acc->num -= nv->num;
+        else if (strcmp(op, "*") == 0) acc->num *= nv->num;
+        else if (strcmp(op, "/") == 0) {
+            if (nv->num == 0) {
+                lval_del(acc); lval_del(nv);
+                acc = lval_err("cannot perform division by 0!");
+                break;
+            }
+            else
+                acc->num /= nv->num;
+        }
+    }
+
+    lval_del(v); return acc;
+}
+
+// evaluate s-expression
+lval_t* lval_eval_sexpr(lval_t* v) {
+    assert(v && "trying to evaluate NULL lval");
+
+    // atomic expressions
+    switch (v->type) {
+        case LVAL_NUM: case LVAL_SYM: case LVAL_ERR:
+            return v;
+    }
+
+    // s-expressions
+    if (v->type == LVAL_SEXPR) {
+        // just return empty ones
+        if (v->count == 0) return v;
+
+        // remove parentheses from atomic ones
+        if (v->count == 1) return lval_take(v, 0);
+
+        // take first element
+        lval_t* sym = lval_pop(v);
+
+        // ensure first element is a symbol
+        if (sym->type != LVAL_SYM) {
+            lval_del(sym); lval_del(v);
+            return lval_err("sexpr needs to have symbol as its first element");
+        }
+
+        // evaluate expression using symbol
+        return builtin_op(sym, v);
+    }
+
+}
