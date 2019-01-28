@@ -8,8 +8,7 @@
 #include "mpc.h"
 
 #include "parsing.h"
-#include "lval.h"
-#include "eval.h"
+#include "lval/all.h"
 
 // MAIN
 int main(int argc, char** argv) {

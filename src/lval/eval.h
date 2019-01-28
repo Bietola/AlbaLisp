@@ -5,7 +5,7 @@
 
 #include "mpc.h"
 
-#include "lval.h"
+#include "core.h"
 
 // db print lispy ast with needed information
 void alba_print_ast(mpc_ast_t* ast, int depth) {
@@ -107,7 +107,7 @@ lval_t* lval_eval(lval_t* v) {
 
     // atomic expressions
     switch (v->type) {
-        case LVAL_NUM: case LVAL_SYM: case LVAL_ERR:
+        case LVAL_NUM: case LVAL_SYM: case LVAL_ERR: case LVAL_QEXPR:
             return v;
         case LVAL_SEXPR:
             return lval_eval_sexpr(v);
