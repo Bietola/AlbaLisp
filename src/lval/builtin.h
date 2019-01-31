@@ -65,6 +65,12 @@ lval_t* builtin_tail(lval_t* args){
     return lst;
 }
 
+// list
+lval_t* builtin_list(lval_t* args) {
+    args->type = LVAL_QEXPR;
+    return args;
+}
+
 /************************/
 /* arithmetic operators */
 /************************/
@@ -116,6 +122,7 @@ lval_t* builtin(const char* sym, lval_t* args) {
     // dispatch to right builtin function
     if (strcmp(sym, "head") == 0) return builtin_head(args);
     if (strcmp(sym, "tail") == 0) return builtin_tail(args);
+    if (strcmp(sym, "list") == 0) return builtin_list(args);
     if (strcmp(sym, "+") == 0 || strcmp(sym, "-") ||
         strcmp(sym, "*") == 0 || strcmp(sym, "/")) return builtin_op(sym, args);
 
