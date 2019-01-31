@@ -68,7 +68,7 @@ void lval_del(lval_t* v) {
         case LVAL_SYM:
             free(v->sym);
             break;
-        case LVAL_SEXPR:
+        case LVAL_SEXPR: case LVAL_QEXPR:
             for (int j = 0; j < v->count; ++j) {
                 lval_del(v->cell[j]);
             }

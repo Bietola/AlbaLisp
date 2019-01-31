@@ -26,7 +26,8 @@ alba_parser_t* alba_new_parser() {
     mpca_lang(MPCA_LANG_DEFAULT,
         "                                                  \
         number  : /-?[0-9]+/;                              \
-        symbol  : '+' | '-' | '*' | '/';                   \
+        symbol  : '+' | '-' | '*' | '/' |                  \
+                  \"head\" | \"tail\";                     \
         sexpr   : '(' <expr>* ')';                         \
         qexpr   : '{' <expr>* '}';                         \
         expr    : <number> | <symbol> | <sexpr> | <qexpr>; \

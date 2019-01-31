@@ -6,6 +6,7 @@
 #include "mpc.h"
 
 #include "core.h"
+#include "builtin.h"
 
 // db print lispy ast with needed information
 void alba_print_ast(mpc_ast_t* ast, int depth) {
@@ -19,53 +20,6 @@ void alba_print_ast(mpc_ast_t* ast, int depth) {
             alba_print_ast(ast->children[j], depth + 1);
         }
     }
-}
-
-// evaluate builtin operator
-lval_t* builtin_op(const char* op, lval_t* v) {
-    assert(op  && "trying to evaluate NULL builtin sym");
-    assert(v   && "trying to evaluate builtin  on NULL expression");
-    assert(v->count != 0 &&
-           "trying to evaluate builtin op on empty expression");
-
-    // ensure all arguments are numbers
-    for (int j = 0; j < v->count; ++j) {
-        if (v->cell[j]->type != LVAL_NUM) {
-            lval_del(v);
-            return lval_err("cannot operate on non-number!");
-        }
-    }
-
-    // take first element
-    lval_t* acc = lval_pop(v, 0);
-
-    // unary minus
-    if (v->count == 0 && strcmp(op, "-") == 0) {
-        acc->num = -acc->num;
-        lval_del(v);
-        return acc;
-    }
-
-    // more than one element
-    while (v->count) {
-        lval_t* nv = lval_pop(v, 0);
-
-        // match operator
-        if      (strcmp(op, "+") == 0) acc->num += nv->num;
-        else if (strcmp(op, "-") == 0) acc->num -= nv->num;
-        else if (strcmp(op, "*") == 0) acc->num *= nv->num;
-        else if (strcmp(op, "/") == 0) {
-            if (nv->num == 0) {
-                lval_del(acc); lval_del(nv);
-                acc = lval_err("cannot perform division by 0!");
-                break;
-            }
-            else
-                acc->num /= nv->num;
-        }
-    }
-
-    lval_del(v); return acc;
 }
 
 // evaluate s-expression
@@ -85,7 +39,7 @@ lval_t* lval_eval_sexpr(lval_t* v) {
     // 0 elements: evaluate to itself
     if (v->count == 0) return v;
 
-    // 1 element: take it
+    // 1 element: take it (eliminating parentheses)
     if (v->count == 1) return lval_take(v, 0);
 
     // 2 or more: pop first as symbol
@@ -98,7 +52,7 @@ lval_t* lval_eval_sexpr(lval_t* v) {
     }
 
     // evaluate expression using symbol
-    return builtin_op(sym->sym, v);
+    return builtin(sym->sym, v);
 }
 
 // evaluate lval
