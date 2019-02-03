@@ -10,8 +10,8 @@
 #include "parsing.h"
 #include "lval/all.h"
 
-// MAIN
-int main(int argc, char** argv) {
+// repl loop
+void repl() {
     // create parser
     alba_parser_t* parser = alba_new_parser();
 
@@ -45,6 +45,11 @@ int main(int argc, char** argv) {
 
     // clean up parser
     alba_free_parser(parser);
+}
+
+// MAIN
+int main(int argc, char** argv) {
+    repl();
 
     return 0;
 }

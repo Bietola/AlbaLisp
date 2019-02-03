@@ -71,6 +71,26 @@ lval_t* builtin_list(lval_t* args) {
     return args;
 }
 
+// eval
+lval_t* lval_eval(lval_t*);
+lval_t* builtin_eval(lval_t* args) {
+    // check for errors
+    LASSERT_BOUNDS(args, 1, 1,
+            "'tail' function called with no arguments",
+            "'tail' function called with too many arguments");
+    LASSERT(args->cell[0]->type == LVAL_QEXPR, args,
+            "'tail' function needs to be passed a q-expression");
+    LASSERT(args->cell[0]->count > 0, args,
+            "cannot take the 'tail' of an empty list!");
+
+    // get q-expression inside arguments
+    lval_t* toEval = lval_take(args, 0);
+
+    // evaluate it as if it was an s-expression
+    toEval->type = LVAL_SEXPR;
+    return lval_eval(toEval);
+}
+
 /************************/
 /* arithmetic operators */
 /************************/
@@ -123,6 +143,7 @@ lval_t* builtin(const char* sym, lval_t* args) {
     if (strcmp(sym, "head") == 0) return builtin_head(args);
     if (strcmp(sym, "tail") == 0) return builtin_tail(args);
     if (strcmp(sym, "list") == 0) return builtin_list(args);
+    if (strcmp(sym, "eval") == 0) return builtin_eval(args);
     if (strcmp(sym, "+") == 0 || strcmp(sym, "-") ||
         strcmp(sym, "*") == 0 || strcmp(sym, "/")) return builtin_op(sym, args);
 

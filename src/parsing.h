@@ -27,7 +27,8 @@ alba_parser_t* alba_new_parser() {
         "                                                  \
         number  : /-?[0-9]+/;                              \
         symbol  : '+' | '-' | '*' | '/' |                  \
-                  \"head\" | \"tail\" | \"list\";          \
+                  \"head\" | \"tail\" | \"list\" |         \
+                  \"eval\";                                \
         sexpr   : '(' <expr>* ')';                         \
         qexpr   : '{' <expr>* '}';                         \
         expr    : <number> | <symbol> | <sexpr> | <qexpr>; \
