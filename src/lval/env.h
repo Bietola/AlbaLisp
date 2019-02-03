@@ -40,17 +40,3 @@ void env_add(env_t* env, const char* name, lval_t* binding) {
     env->names   [env->count - 1] = name;
     env->bindings[env->count - 1] = binding;
 }
-
-// print given environment
-void env_print(env_t* env) {
-    if (!env) {
-        puts("{empty}");
-        return;
-    }
-
-    for (int j = 0; j < env->count; ++j) {
-        printf("%s : ", env->names[j]);
-        lval_print(env->bindings[j]);
-        putchar('\n');
-    }
-}

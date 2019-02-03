@@ -49,7 +49,9 @@ void repl() {
 
 // MAIN
 int main(int argc, char** argv) {
-    repl();
+    env_t* env = env_new();
+    env_add(env, "hello", lval_num(2));
+    env_println(env);
 
     return 0;
 }
