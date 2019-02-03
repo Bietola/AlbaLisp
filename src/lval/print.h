@@ -51,8 +51,8 @@ void env_print(env_t* env) {
     }
 
     for (int j = 0; j < env->count; ++j) {
-        printf("%s : ", env->names[j]);
-        lval_print(env->bindings[j]);
+        printf("%s : ", env->syms[j]->sym);
+        lval_print(env->vals[j]);
     }
 }
 void env_println(env_t* env) {

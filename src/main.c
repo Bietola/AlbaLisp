@@ -15,7 +15,10 @@ void repl() {
     // create parser
     alba_parser_t* parser = alba_new_parser();
 
-    // initializing REPL
+    // create global environment
+    env_t* glbEnv = env_new();
+
+    // initialize REPL
     puts("AlbaLisp v0.0.1");
     puts("A toy language by Stefano Montesi");
 
@@ -31,7 +34,7 @@ void repl() {
         // parse program and return "result"
         mpc_result_t r;
         if (mpc_parse("<stdin>", input, parser->program, &r)) {
-            lval_t* result = lval_eval(lval_read(r.output));
+            lval_t* result = lval_eval(glbEnv, lval_read(r.output));
             lval_println(result);
             mpc_ast_delete(r.output);
         } else {
@@ -43,15 +46,16 @@ void repl() {
         free(input);
     }
 
+    // clen up global environment
+    env_del(glbEnv);
+
     // clean up parser
     alba_free_parser(parser);
 }
 
 // MAIN
 int main(int argc, char** argv) {
-    env_t* env = env_new();
-    env_add(env, "hello", lval_num(2));
-    env_println(env);
+    repl();
 
     return 0;
 }

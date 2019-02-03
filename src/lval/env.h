@@ -4,16 +4,16 @@
 
 // environment structure
 typedef struct {
-    const char** names;
-    lval_t** bindings;
+    lval_t** syms;
+    lval_t** vals;
     int count;
 } env_t;
 
 // constructor
 env_t* env_new() {
     env_t* env = malloc(sizeof(env_t*));
-    env->names = NULL;
-    env->bindings = NULL;
+    env->syms = NULL;
+    env->vals = NULL;
     env->count = 0;
     return env;
 }
@@ -24,19 +24,19 @@ void env_del(env_t* env) {
 }
 
 // add binding
-void env_add(env_t* env, const char* name, lval_t* binding) {
+void env_add(env_t* env, lval_t* sym, lval_t* val) {
     // allocate fields if non existent
-    if (!env->names)
-        env->names = malloc(sizeof(const char**));
-    if (!env->bindings)
-        env->bindings = malloc(sizeof(lval_t**));
+    if (!env->syms)
+        env->syms = malloc(sizeof(lval_t**));
+    if (!env->vals)
+        env->vals = malloc(sizeof(lval_t**));
 
     // expand memory
     ++(env->count);
-    env->names    = realloc(env->names,    sizeof(const char*) * env->count);
-    env->bindings = realloc(env->bindings, sizeof(lval_t*) * env->count);
+    env->syms = realloc(env->syms, sizeof(lval_t*) * env->count);
+    env->vals = realloc(env->vals, sizeof(lval_t*) * env->count);
 
-    // insert binding
-    env->names   [env->count - 1] = name;
-    env->bindings[env->count - 1] = binding;
+    // insert val
+    env->syms[env->count - 1] = sym;
+    env->vals[env->count - 1] = val;
 }

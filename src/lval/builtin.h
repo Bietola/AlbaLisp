@@ -1,19 +1,7 @@
 #pragma once
 
 #include "core.h"
-
-// assertion macro used to return error msg
-#define LASSERT(CND, LVL, ERRMSG) \
-    if (!(CND)) {                   \
-        lval_del(LVL);            \
-        return lval_err(ERRMSG);  \
-    }
-
-// bounds assertion
-#define LASSERT_BOUNDS(LVL, MINB, MAXB, MINMSG, MAXMSG) \
-    LASSERT(LVL->count >= MINB, LVL, MINMSG) \
-    LASSERT(LVL->count <= MINB, LVL, MAXMSG)
-
+#include "lassert.h"
 
 /**********************************************************/
 /*          builtin operators and functions               */
@@ -23,17 +11,59 @@
 /*     every piece of input that the operator requires.   */
 /**********************************************************/
 
+// forward declarations
+lval_t* lval_eval(env_t*, lval_t*);
+
+/**************************/
+/* environment primitives */
+/**************************/
+
+// def
+lval_t* builtin_def(env_t* env, lval_t* args) {
+    // 1st arg: one q-epxression with list of variables
+    // from 2nd arg on: values to assign to variables
+    LASSERT_AT_LEAST(args, 2, "def");
+    LASSERT_TYPES(args, LVAL_QEXPR, "def");
+
+    // get variables list
+    lval_t* vars = lval_pop(args, 0);
+
+    // ensure that all variables are symbols
+    for (int j = 0; j < vars->count; ++j) {
+        if (vars->cell[j]->type != LVAL_SYM) {
+            lval_del(args);
+            return lval_err("only symbols may be used as variables.");
+        }
+    }
+
+    // associate variables to their values and add
+    // them to the environment
+    while (vars->count) {
+        lval_t* sym = lval_pop(vars, 0);
+        lval_t* val = lval_pop(args, 0);
+        if (val)
+            env_add(env, sym, lval_eval(env, val));
+        else
+            // assign nil to var if no more values to
+            // bind are available in args
+            env_add(env, sym, lval_nil());
+    }
+
+    // cleanup
+    lval_del(vars); lval_del(args);
+
+    // always return nil
+    return lval_nil();
+}
+
 /**************************/
 /* q-expression functions */
 /**************************/
 // head
 lval_t* builtin_head(lval_t* args) {
     // check for errors
-    LASSERT_BOUNDS(args, 1, 1,
-        "'head' function called with no arguments",
-        "'head' function called with too many arguments");
-    LASSERT(args->cell[0]->type == LVAL_QEXPR, args,
-        "'head' function needs to be passed a q-expression");
+    LASSERT_BOUNDS(args, 1, 1, "head");
+    LASSERT_TYPES(args, LVAL_QEXPR, "head");
     LASSERT(args->cell[0]->count > 0, args,
         "cannot take the 'head' of an empty list!");
 
@@ -47,11 +77,8 @@ lval_t* builtin_head(lval_t* args) {
 // tail
 lval_t* builtin_tail(lval_t* args){
     // check for errors
-    LASSERT_BOUNDS(args, 1, 1,
-            "'tail' function called with no arguments",
-            "'tail' function called with too many arguments");
-    LASSERT(args->cell[0]->type == LVAL_QEXPR, args,
-            "'tail' function needs to be passed a q-expression");
+    LASSERT_BOUNDS(args, 1, 1, "tail");
+    LASSERT_TYPES(args, LVAL_QEXPR, "tail");
     LASSERT(args->cell[0]->count > 0, args,
             "cannot take the 'tail' of an empty list!");
 
@@ -72,23 +99,19 @@ lval_t* builtin_list(lval_t* args) {
 }
 
 // eval
-lval_t* lval_eval(lval_t*);
-lval_t* builtin_eval(lval_t* args) {
+lval_t* builtin_eval(env_t* env, lval_t* args) {
     // check for errors
-    LASSERT_BOUNDS(args, 1, 1,
-            "'tail' function called with no arguments",
-            "'tail' function called with too many arguments");
-    LASSERT(args->cell[0]->type == LVAL_QEXPR, args,
-            "'tail' function needs to be passed a q-expression");
+    LASSERT_BOUNDS(args, 1, 1, "eval");
+    LASSERT_TYPES(args, LVAL_QEXPR, "eval");
     LASSERT(args->cell[0]->count > 0, args,
-            "cannot take the 'tail' of an empty list!");
+            "cannot evaluate empty list!");
 
     // get q-expression inside arguments
     lval_t* toEval = lval_take(args, 0);
 
     // evaluate it as if it was an s-expression
     toEval->type = LVAL_SEXPR;
-    return lval_eval(toEval);
+    return lval_eval(env, toEval);
 }
 
 /************************/
@@ -138,12 +161,13 @@ lval_t* builtin_op(const char* op, lval_t* v) {
 /*******************************************/
 /* dispatch symbol to his builtin function */
 /*******************************************/
-lval_t* builtin(const char* sym, lval_t* args) {
+lval_t* builtin(const char* sym, env_t* env, lval_t* args) {
     // dispatch to right builtin function
     if (strcmp(sym, "head") == 0) return builtin_head(args);
     if (strcmp(sym, "tail") == 0) return builtin_tail(args);
     if (strcmp(sym, "list") == 0) return builtin_list(args);
-    if (strcmp(sym, "eval") == 0) return builtin_eval(args);
+    if (strcmp(sym, "eval") == 0) return builtin_eval(env, args);
+    if (strcmp(sym, "def")  == 0) return builtin_def (env, args);
     if (strcmp(sym, "+") == 0 || strcmp(sym, "-") ||
         strcmp(sym, "*") == 0 || strcmp(sym, "/")) return builtin_op(sym, args);
 

@@ -6,6 +6,7 @@
 #include "mpc.h"
 
 #include "core.h"
+#include "env.h"
 #include "builtin.h"
 
 // db print lispy ast with needed information
@@ -23,11 +24,11 @@ void alba_print_ast(mpc_ast_t* ast, int depth) {
 }
 
 // evaluate s-expression
-lval_t* lval_eval(lval_t*); // forward declaration
-lval_t* lval_eval_sexpr(lval_t* v) {
+lval_t* lval_eval(env_t*, lval_t*); // forward declaration
+lval_t* lval_eval_sexpr(env_t* e, lval_t* v) {
     // evaluate children
     for (int j = 0; j < v->count; ++j) {
-        v->cell[j] = lval_eval(v->cell[j]);
+        v->cell[j] = lval_eval(e, v->cell[j]);
     }
 
     // propagate errors
@@ -52,11 +53,11 @@ lval_t* lval_eval_sexpr(lval_t* v) {
     }
 
     // evaluate expression using symbol
-    return builtin(sym->sym, v);
+    return builtin(sym->sym, e, v);
 }
 
 // evaluate lval
-lval_t* lval_eval(lval_t* v) {
+lval_t* lval_eval(env_t* e, lval_t* v) {
     assert(v && "trying to evaluate NULL lval");
 
     // atomic expressions
@@ -64,7 +65,7 @@ lval_t* lval_eval(lval_t* v) {
         case LVAL_NUM: case LVAL_SYM: case LVAL_ERR: case LVAL_QEXPR:
             return v;
         case LVAL_SEXPR:
-            return lval_eval_sexpr(v);
+            return lval_eval_sexpr(e, v);
         default:
             assert(0 && "trying to evaluate lval of unknown type");
     }
