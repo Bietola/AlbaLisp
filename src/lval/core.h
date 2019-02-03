@@ -99,6 +99,12 @@ lval_t* lval_qexpr(void) {
     return v;
 }
 
+// lval nil constructor
+//  NB: just returns an empty qexpr for now
+lval_t* lval_nil(void) {
+    return lval_qexpr();
+}
+
 /************/
 /* PRINTING */
 /************/

@@ -23,6 +23,38 @@
 /*     every piece of input that the operator requires.   */
 /**********************************************************/
 
+// forward declarations
+lval_t* lval_eval(env_t*, lval_t*);
+
+/**************************/
+/* environment primitives */
+/**************************/
+
+// def
+lval_t* builtin_def(env_t* env, lval_t* args) {
+    // 1st arg: one q-epxression with list of variables
+    // from 2nd arg on: values to assign to variables
+    LASSERT_AT_LEAST(args, 2);
+    LASSERT_TYPE(args->cell[0], LVAL_QEXPR);
+
+    // get variables list
+    lval_t* vars = lval_pop(args, 0);
+
+    // add variables and their bindings to the environment
+    while (vars->count) {
+        lval_t* var = lval_pop(vars);
+        lval_t* binding = lval_pop(args);
+        if (binding)
+            env_add(env, var, lval_eval(binding));
+        else
+            // assign nil to var if no more bindings are available
+            env_add(env, var, lval_nil());
+    }
+
+    // always return nil
+    return lval_nil();
+}
+
 /**************************/
 /* q-expression functions */
 /**************************/
@@ -72,7 +104,6 @@ lval_t* builtin_list(lval_t* args) {
 }
 
 // eval
-lval_t* lval_eval(lval_t*);
 lval_t* builtin_eval(lval_t* args) {
     // check for errors
     LASSERT_BOUNDS(args, 1, 1,
@@ -138,12 +169,13 @@ lval_t* builtin_op(const char* op, lval_t* v) {
 /*******************************************/
 /* dispatch symbol to his builtin function */
 /*******************************************/
-lval_t* builtin(const char* sym, lval_t* args) {
+lval_t* builtin(const char* sym, env_t* env, lval_t* args) {
     // dispatch to right builtin function
     if (strcmp(sym, "head") == 0) return builtin_head(args);
     if (strcmp(sym, "tail") == 0) return builtin_tail(args);
     if (strcmp(sym, "list") == 0) return builtin_list(args);
     if (strcmp(sym, "eval") == 0) return builtin_eval(args);
+    if (strcmp(sym, "def")  == 0) return builtin_def (env, args);
     if (strcmp(sym, "+") == 0 || strcmp(sym, "-") ||
         strcmp(sym, "*") == 0 || strcmp(sym, "/")) return builtin_op(sym, args);
 

@@ -13,9 +13,9 @@ void lval_add(lval_t* expr, lval_t* toAdd) {
 
 // pop element from s-expression lval
 lval_t* lval_pop(lval_t* expr, int pos) {
-    // assert OOB
-    assert(pos >= 0 && pos < expr->count &&
-           "trying to pop expr out of bounds");
+    // return NULL if expr is empty
+    if (expr->count == 0)
+        return NULL;
 
     // take
     lval_t* ret = expr->cell[pos];
