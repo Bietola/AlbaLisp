@@ -62,7 +62,13 @@ lval_t* lval_eval(env_t* e, lval_t* v) {
 
     // atomic expressions
     switch (v->type) {
-        case LVAL_NUM: case LVAL_SYM: case LVAL_ERR: case LVAL_QEXPR:
+        case LVAL_NUM: case LVAL_ERR: case LVAL_QEXPR:
+            return v;
+        case LVAL_SYM:
+            for (int j = 0; j < e->count; ++j) {
+                if (strcmp(e->syms[j]->sym, v->sym) == 0)
+                    return e->vals[j];
+            }
             return v;
         case LVAL_SEXPR:
             return lval_eval_sexpr(e, v);
