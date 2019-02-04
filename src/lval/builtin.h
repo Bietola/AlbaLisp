@@ -60,7 +60,7 @@ lval_t* builtin_def(env_t* env, lval_t* args) {
 /* q-expression functions */
 /**************************/
 // head
-lval_t* builtin_head(lval_t* args) {
+lval_t* builtin_head(env_t* env, lval_t* args) {
     // check for errors
     LASSERT_BOUNDS(args, 1, 1, "head");
     LASSERT_TYPES(args, LVAL_QEXPR, "head");
@@ -75,7 +75,7 @@ lval_t* builtin_head(lval_t* args) {
 }
 
 // tail
-lval_t* builtin_tail(lval_t* args){
+lval_t* builtin_tail(env_t* env, lval_t* args){
     // check for errors
     LASSERT_BOUNDS(args, 1, 1, "tail");
     LASSERT_TYPES(args, LVAL_QEXPR, "tail");
@@ -93,7 +93,7 @@ lval_t* builtin_tail(lval_t* args){
 }
 
 // list
-lval_t* builtin_list(lval_t* args) {
+lval_t* builtin_list(env_t* env, lval_t* args) {
     args->type = LVAL_QEXPR;
     return args;
 }
@@ -117,59 +117,62 @@ lval_t* builtin_eval(env_t* env, lval_t* args) {
 /************************/
 /* arithmetic operators */
 /************************/
-lval_t* builtin_op(const char* op, lval_t* v) {
+// real work
+lval_t* builtin_op(const char* op, lval_t* args) {
     // ensure all arguments are numbers
-    for (int j = 0; j < v->count; ++j) {
-        if (v->cell[j]->type != LVAL_NUM) {
-            lval_del(v);
+    for (int j = 0; j < args->count; ++j) {
+        if (args->cell[j]->type != LVAL_NUM) {
+            lval_del(args);
             return lval_err("cannot operate on non-number!");
         }
     }
 
     // take first element
-    lval_t* acc = lval_pop(v, 0);
+    lval_t* acc = lval_pop(args, 0);
 
     // unary minus
-    if (v->count == 0 && strcmp(op, "-") == 0) {
+    if (args->count == 0 && strcmp(op, "-") == 0) {
         acc->num = -acc->num;
-        lval_del(v);
+        lval_del(args);
         return acc;
     }
 
     // more than one element
-    while (v->count) {
-        lval_t* nv = lval_pop(v, 0);
+    while (args->count) {
+        lval_t* numv = lval_pop(args, 0);
 
         // match operator
-        if      (strcmp(op, "+") == 0) acc->num += nv->num;
-        else if (strcmp(op, "-") == 0) acc->num -= nv->num;
-        else if (strcmp(op, "*") == 0) acc->num *= nv->num;
+        if      (strcmp(op, "+") == 0) acc->num += numv->num;
+        else if (strcmp(op, "-") == 0) acc->num -= numv->num;
+        else if (strcmp(op, "*") == 0) acc->num *= numv->num;
         else if (strcmp(op, "/") == 0) {
-            if (nv->num == 0) {
-                lval_del(acc); lval_del(nv);
+            if (numv->num == 0) {
+                lval_del(acc); lval_del(numv);
                 acc = lval_err("cannot perform division by 0!");
                 break;
             }
             else
-                acc->num /= nv->num;
+                acc->num /= numv->num;
         }
     }
 
-    lval_del(v); return acc;
+    lval_del(args); return acc;
 }
 
-/*******************************************/
-/* dispatch symbol to his builtin function */
-/*******************************************/
-lval_t* builtin(const char* sym, env_t* env, lval_t* args) {
-    // dispatch to right builtin function
-    if (strcmp(sym, "head") == 0) return builtin_head(args);
-    if (strcmp(sym, "tail") == 0) return builtin_tail(args);
-    if (strcmp(sym, "list") == 0) return builtin_list(args);
-    if (strcmp(sym, "eval") == 0) return builtin_eval(env, args);
-    if (strcmp(sym, "def")  == 0) return builtin_def (env, args);
-    if (strcmp(sym, "+") == 0 || strcmp(sym, "-") ||
-        strcmp(sym, "*") == 0 || strcmp(sym, "/")) return builtin_op(sym, args);
-
-    return lval_err("trying to evaluate unknown builtin!");
+// dispatchers
+// add
+lval_t* builtin_add(env_t* env, lval_t* args) {
+    return builtin_op("+", args);
+}
+// subtract
+lval_t* builtin_subtract(env_t* env, lval_t* args) {
+    return builtin_op("-", args);
+}
+// multiply
+lval_t* builtin_multiply(env_t* env, lval_t* args) {
+    return builtin_op("*", args);
+}
+// divide
+lval_t* builtin_divide(env_t* env, lval_t* args) {
+    return builtin_op("/", args);
 }

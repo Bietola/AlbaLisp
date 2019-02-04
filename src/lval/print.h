@@ -13,12 +13,13 @@ void lval_print(const lval_t* v) {
     assert (v && "trying to print NULL lval");
 
     switch (v->type) {
-        case LVAL_NUM   : printf("%li", v->num); break;
-        case LVAL_ERR   : printf("%s",  v->err); break;
-        case LVAL_SYM   : printf("%s",  v->sym); break;
-        case LVAL_SEXPR : lval_print_expr(v, '(', ')'); break;
-        case LVAL_QEXPR : lval_print_expr(v, '{', '}'); break;
-        default         : assert(0 && "trying to print lval of unknown type");
+        case LVAL_NUM     : printf("%li", v->num);        break;
+        case LVAL_ERR     : printf("%s",  v->err);        break;
+        case LVAL_SYM     : printf("%s",  v->sym);        break;
+        case LVAL_BUILTIN : printf("<builtin>");         break;
+        case LVAL_SEXPR   : lval_print_expr(v, '(', ')'); break;
+        case LVAL_QEXPR   : lval_print_expr(v, '{', '}'); break;
+        default           : assert(0 && "trying to print lval of unknown type");
     }
 }
 void lval_println(const lval_t* v) { lval_print(v); putchar('\n'); }

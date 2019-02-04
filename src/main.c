@@ -18,6 +18,18 @@ void repl() {
     // create global environment
     env_t* glbEnv = env_new();
 
+    // add builtins
+    //  TODO: move this in separate file
+    env_add(glbEnv, lval_sym("def"), lval_builtin(&builtin_def));
+    env_add(glbEnv, lval_sym("head"), lval_builtin(&builtin_head));
+    env_add(glbEnv, lval_sym("tail"), lval_builtin(&builtin_tail));
+    env_add(glbEnv, lval_sym("list"), lval_builtin(&builtin_list));
+    env_add(glbEnv, lval_sym("eval"), lval_builtin(&builtin_eval));
+    env_add(glbEnv, lval_sym("+"), lval_builtin(&builtin_add));
+    env_add(glbEnv, lval_sym("-"), lval_builtin(&builtin_subtract));
+    env_add(glbEnv, lval_sym("*"), lval_builtin(&builtin_multiply));
+    env_add(glbEnv, lval_sym("/"), lval_builtin(&builtin_divide));
+
     // initialize REPL
     puts("AlbaLisp v0.0.1");
     puts("A toy language by Stefano Montesi");

@@ -1,10 +1,21 @@
 #pragma once
 
+// forward declarations
+struct env_t;
+struct lval_t;
+typedef struct env_t env_t;
+typedef struct lval_t lval_t;
+
+// type used to store builtin functions
+// and associate them with symbols
+typedef lval_t* (*builtin_t)(env_t*, lval_t*);
+
 // types of lvals
 typedef enum {
     LVAL_ERR,
     LVAL_NUM,
     LVAL_SYM,
+    LVAL_BUILTIN,
     LVAL_SEXPR,
     LVAL_QEXPR
 } LVAL_TYPE;
@@ -17,18 +28,19 @@ typedef enum {
 } LERR_TYPE;
 
 // lval
-typedef struct lval_t {
+struct lval_t {
     LVAL_TYPE type; // error or number
     union {
         long num;
         char* err;
         char* sym;
+        builtin_t builtin;
         struct {
             int count;
             struct lval_t** cell;
         };
     };
-} lval_t;
+};
 
 // lval number constructor
 lval_t* lval_num(long num) {
@@ -56,6 +68,14 @@ lval_t* lval_sym(char* sym) {
     return v;
 }
 
+// lval builtin constructor
+lval_t* lval_builtin(builtin_t builtin) {
+    lval_t* v = malloc(sizeof(lval_t));
+    v->type = LVAL_BUILTIN;
+    v->builtin = builtin;
+    return v;
+}
+
 // free lval memory
 void lval_del(lval_t* v) {
     switch (v->type) {
@@ -67,6 +87,9 @@ void lval_del(lval_t* v) {
             break;
         case LVAL_SYM:
             free(v->sym);
+            break;
+        case LVAL_BUILTIN:
+            // pointer to builtin function is non-owning
             break;
         case LVAL_SEXPR: case LVAL_QEXPR:
             for (int j = 0; j < v->count; ++j) {

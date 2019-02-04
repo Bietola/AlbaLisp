@@ -26,7 +26,7 @@ void alba_print_ast(mpc_ast_t* ast, int depth) {
 // evaluate s-expression
 lval_t* lval_eval(env_t*, lval_t*); // forward declaration
 lval_t* lval_eval_sexpr(env_t* e, lval_t* v) {
-    // evaluate children
+    // evaluate children (apart from symbol)
     for (int j = 0; j < v->count; ++j) {
         v->cell[j] = lval_eval(e, v->cell[j]);
     }
@@ -46,14 +46,19 @@ lval_t* lval_eval_sexpr(env_t* e, lval_t* v) {
     // 2 or more: pop first as symbol
     lval_t* sym = lval_pop(v, 0);
 
-    // ensure it is actually a symbol
-    if (sym->type != LVAL_SYM) {
-        lval_del(sym); lval_del(v);
-        return lval_err("sexpr needs to have symbol as its first element");
+    // cleanup before returning error
+    #define errclean() lval_del(sym); lval_del(v);
+
+    // ensure it is actually a callable
+    //  TODO: only checks and works with builtins for now
+    if (sym->type != LVAL_BUILTIN) {
+        errclean();
+        return lval_err("sexpr needs to have a callable as its first element");
     }
 
-    // evaluate expression using symbol
-    return builtin(sym->sym, e, v);
+    // evaluate expression using callable
+    //  NB: only builtins work for now
+    return sym->builtin(e, v);
 }
 
 // evaluate lval
@@ -65,11 +70,9 @@ lval_t* lval_eval(env_t* e, lval_t* v) {
         case LVAL_NUM: case LVAL_ERR: case LVAL_QEXPR:
             return v;
         case LVAL_SYM:
-            for (int j = 0; j < e->count; ++j) {
-                if (strcmp(e->syms[j]->sym, v->sym) == 0)
-                    return e->vals[j];
-            }
-            return v;
+            // return associated environment value
+            // (or nil if not present)
+            return env_find(e, v);
         case LVAL_SEXPR:
             return lval_eval_sexpr(e, v);
         default:
