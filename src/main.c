@@ -69,5 +69,7 @@ void repl() {
 int main(int argc, char** argv) {
     repl();
 
+    alba_new_parser
+
     return 0;
 }
